@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * Varnish admin socket for executing varnishadm CLI commands.
+ * @see https://www.varnish-cache.org/docs/4.0/reference/varnish-cli.html
+ * @author Jesus Lopez http://jesuslc.com
+ *
+ **/
 namespace VarnishAdmin;
 
 interface VarnishAdmin
