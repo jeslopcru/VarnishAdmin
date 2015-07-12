@@ -9,7 +9,7 @@ Pull request are welcome using PSR-2
 
 # Requirements
 
-VarnishAdmin is supported on PHP 5.4.* and up.
+VarnishAdmin is supported on PHP 5.5.* and up.
 
 # License
 
