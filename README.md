@@ -12,6 +12,24 @@ Pull request are welcome using PSR-2
 
 VarnishAdmin is supported on PHP 5.5.* and up.
 
+#Example
+
+## Varnish 4
+```php
+  $varnish = new VarnishAdminSocket('192.168.10.10', 6082, '4.0.3');
+  $varnish->purgeUrl('example.com');
+  $varnish->quit();
+```
+
+## Varnish 3
+```php
+  //purge postId  (id = 354)
+  //www.example.com?id=354
+  $varnish = new VarnishAdminSocket();
+  $varnish->purgeUrl('id=354');
+  $varnish->quit();
+```
+
 # License
 
 The whole VarnishAdmin package, is released under the MIT license, see LICENSE.
