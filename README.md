@@ -18,6 +18,15 @@ To install this package, run the command below and you will get the latest versi
 composer require jeslopcru/varnishadmin
 ```
 
+or include this in your composer.json
+```
+{
+  "require": {
+    "jeslopcru/varnishadmin": "dev-master"
+  }
+}
+```
+
 
 #Example
 
