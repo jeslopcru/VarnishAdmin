@@ -12,6 +12,13 @@ Pull request are welcome using PSR-2
 
 VarnishAdmin is supported on PHP 5.5.* and up.
 
+#Use
+To install this package, run the command below and you will get the latest version
+```
+composer require jeslopcru/varnishadmin
+```
+
+
 #Example
 
 ## Varnish 4
