@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/jeslopcru/VarnishAdmin.svg?branch=master)](https://travis-ci.org/jeslopcru/VarnishAdmin)
+[![Build Status](https://travis-ci.org/jeslopcru/VarnishAdmin.svg?branch=master)](https://travis-ci.org/jeslopcru/VarnishAdmin) [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/jeslopcru/VarnishAdmin/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/jeslopcru/VarnishAdmin/?branch=master)
 # VarnishAdmin PHP Library
 
 VarnishAdmin is a PHP Library for manage Varnish reverse proxy cache commands using PHP.
