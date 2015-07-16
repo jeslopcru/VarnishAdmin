@@ -110,7 +110,7 @@ class VarnishAdminSocket implements VarnishAdmin
     }
 
     /**
-     * @param $timeout
+     * @param integer $timeout
      * @throws Exception
      */
     protected function openSocket($timeout)
@@ -168,7 +168,7 @@ class VarnishAdminSocket implements VarnishAdmin
     /**
      * Write a command to the socket with a trailing line break and get response straight away.
      *
-     * @param $cmd
+     * @param string $cmd
      * @param $code
      * @param int $ok
      * @return string
@@ -291,6 +291,9 @@ class VarnishAdminSocket implements VarnishAdmin
         }
     }
 
+    /**
+     * @param null|string $response
+     */
     protected function isRunning($response)
     {
         if (!preg_match('/Child in state (\w+)/', $response, $r)) {
