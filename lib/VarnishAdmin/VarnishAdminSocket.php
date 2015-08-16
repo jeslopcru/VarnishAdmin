@@ -15,7 +15,7 @@ class VarnishAdminSocket implements VarnishAdmin
     /**
      * Port on which varnishadm is listening, usually 6082.
      *
-     * @var string port
+     * @var int port
      */
     protected $port;
     /**
@@ -265,8 +265,8 @@ class VarnishAdminSocket implements VarnishAdmin
     public function start()
     {
         if ($this->status()) {
-            trigger_error(sprintf('varnish host already started on %s:%s',
-                $this->host, $this->port), E_USER_NOTICE);
+            $this->generateErrorMassage(sprintf('varnish host already started on %s:%s',
+                $this->host, $this->port));
 
             return true;
         }
@@ -305,6 +305,11 @@ class VarnishAdminSocket implements VarnishAdmin
         return $result;
     }
 
+    protected function generateErrorMassage($msg)
+    {
+        trigger_error($msg, E_USER_NOTICE);
+    }
+
     /**
      * Set authentication secret.
      * Warning: may require a trailing newline if passed to varnishadm from a text file.
@@ -322,7 +327,8 @@ class VarnishAdminSocket implements VarnishAdmin
     public function stop()
     {
         if (!$this->status()) {
-            trigger_error(sprintf('varnish host already stopped on %s:%s', $this->host, $this->port), E_USER_NOTICE);
+            $this->generateErrorMassage(sprintf('varnish host already stopped on %s:%s',
+                $this->host, $this->port));
 
             return true;
         }
