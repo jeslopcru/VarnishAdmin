@@ -1,6 +1,9 @@
 <?php
+namespace VarnishAdmin\Tests;
 
-use VarnishAdmin\VarnishAdminSocket;
+use Exception;
+use PHPUnit_Framework_TestCase;
+use VarnishAdmin;
 
 class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
 {
@@ -48,7 +51,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @throws \VarnishAdmin\Exception
+     * @throws Exception
      * @expectedException Exception
      * @expectedExceptionMessage Authentication required; see VarnishAdminSocket::setSecret
      */
@@ -60,7 +63,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @throws \VarnishAdmin\Exception
+     * @throws Exception
      * @expectedException Exception
      * @expectedExceptionMessage Authentication failed
      */
@@ -73,7 +76,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     }
 
     /**
-     * @throws \VarnishAdmin\Exception
+     * @throws Exception
      * @expectedException Exception
      * @expectedExceptionMessage Bad response from varnishadm on 127.0.0.1:6082
      */
@@ -163,44 +166,5 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     public function testStopWhenNotRunning()
     {
         $this->assertEquals(true, @$this->admin->stop());
-    }
-}
-
-class VarnishAdminSocketFake extends VarnishAdminSocket
-{
-    public $host;
-    public $port;
-    public $fp;
-    public $secret;
-    public $version;
-
-    //Mocks
-    public $codeMock;
-    public $commandResultException;
-    public $commandExecuted = array();
-    public $isRunningMock;
-
-    protected function openSocket($timeout)
-    {
-    }
-
-    protected function read(&$code)
-    {
-        $code = $this->codeMock;
-    }
-
-    protected function command($cmd, $code = '', $ok = 200)
-    {
-        if (isset($this->commandResultException)) {
-            throw new Exception($this->commandResultException);
-        }
-        $this->commandExecuted[] = $cmd;
-
-        return $cmd;
-    }
-
-    protected function isRunning($response)
-    {
-        return $this->isRunningMock;
     }
 }
