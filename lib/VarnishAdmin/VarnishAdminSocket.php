@@ -6,6 +6,9 @@ use Exception;
 
 class VarnishAdminSocket implements VarnishAdmin
 {
+    const DEFAULT_HOST = '127.0.0.1';
+    const DEFAULT_PORT = 6082;
+    const DEFAULT_VERSION = '3.04';
     /**
      * Host on which varnishadm is listening.
      *
@@ -47,11 +50,10 @@ class VarnishAdminSocket implements VarnishAdmin
      *
      * @throws \Exception
      */
-    public function __construct($host = '127.0.0.1', $port = 6082, $version = '3.04')
+    public function __construct($host = null, $port = null, $version = null)
     {
-        $this->host = $host;
-        $this->port = $port;
-
+        $this->setHost($host);
+        $this->setPort($port);
         $this->setVersion($version);
 
         //default command values
@@ -68,11 +70,27 @@ class VarnishAdminSocket implements VarnishAdmin
         }
     }
 
-    /**
-     * @param int $version by default version 3
-     */
-    protected function setVersion($version)
+    private function setHost($host)
     {
+        $this->host = $host;
+        if (empty($this->host)) {
+            $this->host = self::DEFAULT_HOST;
+        }
+    }
+
+    private function setPort($port)
+    {
+        $this->port = $port;
+        if (empty($this->port)) {
+            $this->port = self::DEFAULT_PORT;
+        }
+    }
+
+    private function setVersion($version)
+    {
+        if (empty($version)) {
+            $version = self::DEFAULT_VERSION;
+        }
         $versionSplit = explode('.', $version, 3);
         $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : 3;
     }
