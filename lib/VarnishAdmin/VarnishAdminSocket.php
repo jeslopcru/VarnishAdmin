@@ -8,7 +8,9 @@ class VarnishAdminSocket implements VarnishAdmin
 {
     const DEFAULT_HOST = '127.0.0.1';
     const DEFAULT_PORT = 6082;
-    const DEFAULT_VERSION = '3.04';
+    const DEFAULT_VERSION = '3';
+    const THIRD_VERSION = 3;
+    const FOURTH_VERSION = 4;
     /**
      * Host on which varnishadm is listening.
      *
@@ -56,17 +58,14 @@ class VarnishAdminSocket implements VarnishAdmin
         $this->setPort($port);
         $this->setVersion($version);
 
-        //default command values
-        $this->quit = 'quit';
-        $this->purgeCommand = 'ban';
+        $this->checkSupportedVersion();
+        $this->setDefaultCommands();
 
         //Different directives depends Varnish version
-        if ($this->version == 4) {
+        if ($this->isFourthVersion()) {
             $this->purgeUrlCommand = $this->purgeCommand . ' req.url ~';
-        } elseif ($this->version == 3) {
+        } elseif ($this->isThirdVersion()) {
             $this->purgeUrlCommand = $this->purgeCommand . '.url';
-        } else {
-            throw new \Exception('Only versions 3 and 4 of Varnish are supported');
         }
     }
 
@@ -91,8 +90,34 @@ class VarnishAdminSocket implements VarnishAdmin
         if (empty($version)) {
             $version = self::DEFAULT_VERSION;
         }
-        $versionSplit = explode('.', $version, 3);
-        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : 3;
+        $versionSplit = explode('.', $version, self::THIRD_VERSION);
+        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : self::THIRD_VERSION;
+    }
+
+    private function checkSupportedVersion()
+    {
+        if (!$this->isFourthVersion() && !$this->isThirdVersion()) {
+            throw new \Exception('Only versions 3 and 4 of Varnish are supported');
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    private function isFourthVersion()
+    {
+        return $this->version == self::FOURTH_VERSION;
+    }
+
+    private function isThirdVersion()
+    {
+        return $this->version == self::THIRD_VERSION;
+    }
+
+    private function setDefaultCommands()
+    {
+        $this->quit = 'quit';
+        $this->purgeCommand = 'ban';
     }
 
     /**
