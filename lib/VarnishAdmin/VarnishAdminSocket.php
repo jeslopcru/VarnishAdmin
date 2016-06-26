@@ -60,13 +60,6 @@ class VarnishAdminSocket implements VarnishAdmin
 
         $this->checkSupportedVersion();
         $this->setDefaultCommands();
-
-        //Different directives depends Varnish version
-        if ($this->isFourthVersion()) {
-            $this->purgeUrlCommand = $this->purgeCommand . ' req.url ~';
-        } elseif ($this->isThirdVersion()) {
-            $this->purgeUrlCommand = $this->purgeCommand . '.url';
-        }
     }
 
     private function setHost($host)
@@ -118,6 +111,14 @@ class VarnishAdminSocket implements VarnishAdmin
     {
         $this->quit = 'quit';
         $this->purgeCommand = 'ban';
+
+        if ($this->isFourthVersion()) {
+            $this->purgeUrlCommand = $this->purgeCommand . ' req.url ~';
+        }
+        
+        if ($this->isThirdVersion()) {
+            $this->purgeUrlCommand = $this->purgeCommand . '.url';
+        }
     }
 
     /**
