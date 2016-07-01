@@ -242,7 +242,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function start()
     {
         if ($this->status()) {
-            $this->generateErrorMassage(sprintf('varnish host already started on %s:%s',
+            $this->generateErrorMessage(sprintf('varnish host already started on %s:%s',
                 $this->host, $this->port));
 
             return true;
@@ -282,7 +282,7 @@ class VarnishAdminSocket implements VarnishAdmin
         return $result;
     }
 
-    protected function generateErrorMassage($msg)
+    protected function generateErrorMessage($msg)
     {
         trigger_error($msg, E_USER_NOTICE);
     }
@@ -304,7 +304,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function stop()
     {
         if (!$this->status()) {
-            $this->generateErrorMassage(sprintf('varnish host already stopped on %s:%s',
+            $this->generateErrorMessage(sprintf('varnish host already stopped on %s:%s',
                 $this->host, $this->port));
 
             return true;
