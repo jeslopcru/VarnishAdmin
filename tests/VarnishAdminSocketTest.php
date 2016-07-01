@@ -44,7 +44,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     public function testCloseConnection()
     {
         $this->admin->close();
-        $this->assertNull($this->admin->fp);
+        $this->assertNull($this->admin->getSocket());
     }
 
     public function testConnectOk()
@@ -114,9 +114,8 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     public function testQuit()
     {
         $this->admin->quit();
-        $this->assertNull($this->admin->fp);
+        $this->assertNull($this->admin->getSocket());
         $this->assertContains('quit', $this->admin->commandExecuted);
-
     }
 
     public function testStart()

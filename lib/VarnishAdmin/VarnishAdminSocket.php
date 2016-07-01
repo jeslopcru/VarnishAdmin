@@ -119,18 +119,10 @@ class VarnishAdminSocket implements VarnishAdmin
         if ($this->isFourthVersion()) {
             $this->purgeUrlCommand = $this->purgeCommand . ' req.url ~';
         }
-        
+
         if ($this->isThirdVersion()) {
             $this->purgeUrlCommand = $this->purgeCommand . '.url';
         }
-    }
-
-    /**
-     * @param Socket $socket
-     */
-    public function setSocket($socket)
-    {
-        $this->socket = $socket;
     }
 
     /**
@@ -183,67 +175,12 @@ class VarnishAdminSocket implements VarnishAdmin
         if (!$this->host) {
             return null;
         }
-        $cmd && $this->write($cmd);
-        $this->write("\n");
-        $response = $this->read($code);
+        $cmd && $this->socket->write($cmd);
+        $this->socket->write("\n");
+        $response = $this->socket->read($code);
         if ($code !== $ok) {
             $response = implode("\n > ", explode("\n", trim($response)));
             throw new Exception(sprintf("%s command responded %d:\n > %s", $cmd, $code, $response), $code);
-        }
-
-        return $response;
-    }
-
-    /**
-     * Write data to the socket input stream.
-     *
-     * @param $data
-     * @return bool
-     * @throws Exception
-     * @internal param $string
-     */
-    private function write($data)
-    {
-        $bytes = fputs($this->fp, $data);
-        if ($bytes !== strlen($data)) {
-            throw new Exception(sprintf('Failed to write to varnishadm on %s:%s', $this->host, $this->port));
-        }
-
-        return true;
-    }
-
-    /**
-     * @param $code
-     * @return string
-     * @throws Exception
-     * @internal param reference $int for reply code
-     */
-    protected function read(&$code)
-    {
-        $code = null;
-        $len = null;
-        // get bytes until we have either a response code and message length or an end of file
-        // code should be on first line, so we should get it in one chunk
-        while (!feof($this->fp)) {
-            $response = fgets($this->fp, 1024);
-            if (!$response) {
-                $meta = stream_get_meta_data($this->fp);
-                if ($meta['timed_out']) {
-                    throw new Exception(sprintf('Timed out reading from socket %s:%s', $this->host, $this->port));
-                }
-            }
-            if (preg_match('/^(\d{3}) (\d+)/', $response, $r)) {
-                $code = (int)$r[1];
-                $len = (int)$r[2];
-                break;
-            }
-        }
-        if (is_null($code)) {
-            throw new Exception('Failed to get numeric code in response');
-        }
-        $response = '';
-        while (!feof($this->fp) && strlen($response) < $len) {
-            $response .= fgets($this->fp, 1024);
         }
 
         return $response;
@@ -295,8 +232,8 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function close()
     {
-        is_resource($this->fp) && fclose($this->fp);
-        $this->fp = null;
+        $this->socket->close();
+        $this->socket = null;
     }
 
     /**
@@ -376,5 +313,21 @@ class VarnishAdminSocket implements VarnishAdmin
         $this->command('stop');
 
         return true;
+    }
+
+    /**
+     * @return Socket
+     */
+    public function getSocket()
+    {
+        return $this->socket;
+    }
+
+    /**
+     * @param Socket $socket
+     */
+    public function setSocket($socket)
+    {
+        $this->socket = $socket;
     }
 }

@@ -3,7 +3,6 @@
 
 namespace VarnishAdmin;
 
-
 use Exception;
 
 class Socket
@@ -12,7 +11,7 @@ class Socket
 
     private $host;
     private $port;
-    
+
     public function openSocket($host, $port, $timeout)
     {
         $this->host = $host;
@@ -59,5 +58,22 @@ class Socket
         }
 
         return $response;
+    }
+
+
+    public function write($data)
+    {
+        $bytes = fputs($this->fp, $data);
+        if ($bytes !== strlen($data)) {
+            throw new Exception(sprintf('Failed to write to varnishadm on %s:%s', $this->host, $this->port));
+        }
+
+        return true;
+    }
+
+    public function close()
+    {
+        is_resource($this->fp) && fclose($this->fp);
+        $this->fp = null;
     }
 }

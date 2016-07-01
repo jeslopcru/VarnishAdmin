@@ -2,7 +2,6 @@
 
 namespace VarnishAdmin\Tests;
 
-
 use Exception;
 use VarnishAdmin\VarnishAdminSocket;
 
@@ -10,7 +9,6 @@ class VarnishAdminSocketFake extends VarnishAdminSocket
 {
     public $host;
     public $port;
-    public $fp;
     public $secret;
     public $version;
 

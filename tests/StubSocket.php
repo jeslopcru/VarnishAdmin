@@ -3,8 +3,9 @@
 
 namespace VarnishAdmin\Tests;
 
+use VarnishAdmin\Socket;
 
-class StubSocket
+class StubSocket extends Socket
 {
     public $codeMock;
 
