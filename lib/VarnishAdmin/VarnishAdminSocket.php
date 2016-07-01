@@ -11,6 +11,7 @@ class VarnishAdminSocket implements VarnishAdmin
     const DEFAULT_VERSION = '3';
     const THIRD_VERSION = 3;
     const FOURTH_VERSION = 4;
+    const DEFAULT_TIMEOUT = 5;
     /**
      * Host on which varnishadm is listening.
      *
@@ -43,6 +44,8 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     private $fp;
 
+    private $socket;
+
     /**
      * Constructor.
      *
@@ -60,6 +63,7 @@ class VarnishAdminSocket implements VarnishAdmin
 
         $this->checkSupportedVersion();
         $this->setDefaultCommands();
+        $this->socket = new Socket();
     }
 
     private function setHost($host)
@@ -122,6 +126,14 @@ class VarnishAdminSocket implements VarnishAdmin
     }
 
     /**
+     * @param Socket $socket
+     */
+    public function setSocket($socket)
+    {
+        $this->socket = $socket;
+    }
+
+    /**
      * Connect to admin socket.
      *
      * @param int $timeout in seconds, defaults to 5; used for connect and reads
@@ -129,11 +141,14 @@ class VarnishAdminSocket implements VarnishAdmin
      * @throws Exception
      * @throws \Exception
      */
-    public function connect($timeout = 5)
+    public function connect($timeout = null)
     {
-        $this->openSocket($timeout);
+        if (empty($timeout)) {
+            $timeout = self::DEFAULT_TIMEOUT;
+        }
+        $this->socket->openSocket($this->host, $this->port, $timeout);
         // connecting should give us the varnishadm banner with a 200 code, or 107 for auth challenge
-        $banner = $this->read($code);
+        $banner = $this->socket->read($code);
         if ($code === 107) {
             if (!$this->secret) {
                 throw new \Exception('Authentication required; see VarnishAdminSocket::setSecret');
@@ -151,62 +166,6 @@ class VarnishAdminSocket implements VarnishAdmin
         }
 
         return $banner;
-    }
-
-    /**
-     * @param integer $timeout
-     * @throws Exception
-     */
-    protected function openSocket($timeout)
-    {
-        $errno = null;
-        $errstr = null;
-        $this->fp = fsockopen($this->host, $this->port, $errno, $errstr, $timeout);
-        if (!is_resource($this->fp)) {
-            // error would have been raised already by fsockopen
-            throw new Exception(sprintf('Failed to connect to varnishadm on %s:%s; "%s"', $this->host, $this->port,
-                $errstr));
-        }
-        // set socket options
-        stream_set_blocking($this->fp, 1);
-        stream_set_timeout($this->fp, $timeout);
-    }
-
-    /**
-     * @param $code
-     * @return string
-     * @throws Exception
-     * @internal param reference $int for reply code
-     */
-    protected function read(&$code)
-    {
-        $code = null;
-        $len = null;
-        // get bytes until we have either a response code and message length or an end of file
-        // code should be on first line, so we should get it in one chunk
-        while (!feof($this->fp)) {
-            $response = fgets($this->fp, 1024);
-            if (!$response) {
-                $meta = stream_get_meta_data($this->fp);
-                if ($meta['timed_out']) {
-                    throw new Exception(sprintf('Timed out reading from socket %s:%s', $this->host, $this->port));
-                }
-            }
-            if (preg_match('/^(\d{3}) (\d+)/', $response, $r)) {
-                $code = (int)$r[1];
-                $len = (int)$r[2];
-                break;
-            }
-        }
-        if (is_null($code)) {
-            throw new Exception('Failed to get numeric code in response');
-        }
-        $response = '';
-        while (!feof($this->fp) && strlen($response) < $len) {
-            $response .= fgets($this->fp, 1024);
-        }
-
-        return $response;
     }
 
     /**
@@ -251,6 +210,43 @@ class VarnishAdminSocket implements VarnishAdmin
         }
 
         return true;
+    }
+
+    /**
+     * @param $code
+     * @return string
+     * @throws Exception
+     * @internal param reference $int for reply code
+     */
+    protected function read(&$code)
+    {
+        $code = null;
+        $len = null;
+        // get bytes until we have either a response code and message length or an end of file
+        // code should be on first line, so we should get it in one chunk
+        while (!feof($this->fp)) {
+            $response = fgets($this->fp, 1024);
+            if (!$response) {
+                $meta = stream_get_meta_data($this->fp);
+                if ($meta['timed_out']) {
+                    throw new Exception(sprintf('Timed out reading from socket %s:%s', $this->host, $this->port));
+                }
+            }
+            if (preg_match('/^(\d{3}) (\d+)/', $response, $r)) {
+                $code = (int)$r[1];
+                $len = (int)$r[2];
+                break;
+            }
+        }
+        if (is_null($code)) {
+            throw new Exception('Failed to get numeric code in response');
+        }
+        $response = '';
+        while (!feof($this->fp) && strlen($response) < $len) {
+            $response .= fgets($this->fp, 1024);
+        }
+
+        return $response;
     }
 
     /**

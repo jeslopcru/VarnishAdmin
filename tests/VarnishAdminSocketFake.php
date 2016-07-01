@@ -15,19 +15,9 @@ class VarnishAdminSocketFake extends VarnishAdminSocket
     public $version;
 
     //Mocks
-    public $codeMock;
     public $commandResultException;
     public $commandExecuted = array();
     public $isRunningMock;
-
-    protected function openSocket($timeout)
-    {
-    }
-
-    protected function read(&$code)
-    {
-        $code = $this->codeMock;
-    }
 
     protected function command($cmd, $code = '', $ok = 200)
     {

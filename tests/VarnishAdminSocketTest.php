@@ -9,10 +9,13 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
 {
     /** @var VarnishAdminSocketFake */
     public $admin;
+    public $stubSocket;
 
     public function setUp()
     {
         $this->admin = new VarnishAdminSocketFake();
+        $this->stubSocket = new StubSocket();
+        $this->admin->setSocket($this->stubSocket);
     }
 
     public function testConstructDefaultValues()
@@ -46,7 +49,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
 
     public function testConnectOk()
     {
-        $this->admin->codeMock = 200;
+        $this->stubSocket->codeMock = 200;
         $this->assertNull($this->admin->connect());
     }
 
@@ -57,7 +60,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
      */
     public function testConnectAuthenticationRequiredNotSecretDefined()
     {
-        $this->admin->codeMock = 107;
+        $this->stubSocket->codeMock = 107;
         $this->admin->secret = false;
         $this->assertNull($this->admin->connect());
     }
@@ -69,7 +72,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
      */
     public function testConnectAuthenticationFailed()
     {
-        $this->admin->codeMock = 107;
+        $this->stubSocket->codeMock = 107;
         $this->admin->secret = true;
         $this->admin->commandResultException = 'Authentication failed';
         $this->assertNull($this->admin->connect());
@@ -82,7 +85,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
      */
     public function testConnectBadResponse()
     {
-        $this->admin->codeMock = 503;
+        $this->stubSocket->codeMock = 503;
         $this->admin->secret = true;
         $this->admin->commandResultException = sprintf('Bad response from varnishadm on %s:%s', $this->admin->host,
             $this->admin->port);
