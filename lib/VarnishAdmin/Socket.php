@@ -10,12 +10,16 @@ class Socket
 {
     private $fp;
 
+    private $host;
+    private $port;
+    
     public function openSocket($host, $port, $timeout)
     {
-        return null;
+        $this->host = $host;
+        $this->port = $port;
         $errno = null;
         $errstr = null;
-        $this->fp = fsockopen($host, $port, $errno, $errstr, $timeout);
+        $this->fp = fsockopen($this->host, $this->port, $errno, $errstr, $timeout);
         if (!is_resource($this->fp)) {
             // error would have been raised already by fsockopen
             throw new Exception(sprintf('Failed to connect to varnishadm on %s:%s; "%s"', $this->host, $this->port,
