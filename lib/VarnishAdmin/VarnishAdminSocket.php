@@ -3,6 +3,9 @@
 namespace VarnishAdmin;
 
 use Exception;
+use VarnishAdmin\version\Version;
+use VarnishAdmin\version\Version3;
+use VarnishAdmin\version\Version4;
 
 class VarnishAdminSocket implements VarnishAdmin
 {
@@ -39,11 +42,8 @@ class VarnishAdminSocket implements VarnishAdmin
     protected $purgeCommand;
     protected $quit;
     protected $purgeUrlCommand;
-    /**
-     * Socket pointer.
-     */
-    private $fp;
-
+    /** @var  Version */
+    private $command;
     private $socket;
 
     /**
@@ -118,10 +118,13 @@ class VarnishAdminSocket implements VarnishAdmin
 
         if ($this->isFourthVersion()) {
             $this->purgeUrlCommand = $this->purgeCommand . ' req.url ~';
+            $this->command = new Version4();
         }
 
         if ($this->isThirdVersion()) {
             $this->purgeUrlCommand = $this->purgeCommand . '.url';
+            $this->command = new Version3();
+
         }
     }
 
@@ -197,7 +200,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purge($expr)
     {
-        return $this->command($this->purgeCommand . ' ' . $expr);
+        return $this->command($this->command->getPurgeCommand() . ' ' . $expr);
     }
 
     /**
@@ -211,7 +214,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purgeUrl($url)
     {
-        return $this->command($this->purgeUrlCommand . ' ' . $url);
+        return $this->command($this->command->getPurgeUrlCommand() . ' ' . $url);
     }
 
     /**
@@ -220,7 +223,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function quit()
     {
         try {
-            $this->command('quit', null, 500);
+            $this->command($this->command->getQuit(), null, 500);
         } catch (Exception $Ex) {
             // silent fail - force close of socket
         }
@@ -247,20 +250,15 @@ class VarnishAdminSocket implements VarnishAdmin
 
             return true;
         }
-        $this->command('start');
+        $this->command($this->command->getStart());
 
         return true;
     }
 
-    /**
-     * Test varnish child status.
-     *
-     * @return bool whether child is alive
-     */
     public function status()
     {
         try {
-            $response = $this->command('status');
+            $response = $this->command($this->command->getStatus());
 
             return $this->isRunning($response);
         } catch (\Exception $Ex) {
@@ -268,18 +266,13 @@ class VarnishAdminSocket implements VarnishAdmin
         }
     }
 
-    /**
-     * @param null|string $response
-     */
     protected function isRunning($response)
     {
-        if (!preg_match('/Child in state (\w+)/', $response, $r)) {
+        if (!preg_match('/Child in state (\w+)/', $response, $result)) {
             return false;
         }
 
-        $result = $r[1] === 'running' ? true : false;
-
-        return $result;
+        return $result[1] === 'running' ? true : false;
     }
 
     protected function generateErrorMessage($msg)
@@ -310,7 +303,7 @@ class VarnishAdminSocket implements VarnishAdmin
             return true;
         }
 
-        $this->command('stop');
+        $this->command($this->command->getStop());
 
         return true;
     }
