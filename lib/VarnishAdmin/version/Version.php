@@ -10,6 +10,7 @@ abstract class Version
     const STATUS = 'status';
     const STOP = 'stop';
     const BAN = 'ban';
+    const AUTH = 'auth';
 
     /**
      * @return string
@@ -59,5 +60,13 @@ abstract class Version
     public function getStop()
     {
         return self::STOP;
+    }
+
+    /**
+     * @return string
+     */
+    public function getAuth()
+    {
+        return self::AUTH;
     }
 }
