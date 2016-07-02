@@ -39,11 +39,9 @@ class VarnishAdminSocket implements VarnishAdmin
      * @var int
      */
     protected $version;
-    protected $purgeCommand;
-    protected $quit;
-    protected $purgeUrlCommand;
+
     /** @var  Version */
-    private $command;
+    private $commandName;
     private $socket;
 
     /**
@@ -59,6 +57,7 @@ class VarnishAdminSocket implements VarnishAdmin
     {
         $this->setHost($host);
         $this->setPort($port);
+
         $this->setVersion($version);
 
         $this->checkSupportedVersion();
@@ -113,16 +112,12 @@ class VarnishAdminSocket implements VarnishAdmin
 
     private function setDefaultCommands()
     {
-        $this->quit = 'quit';
-        $this->purgeCommand = 'ban';
-
         if ($this->isFourthVersion()) {
-            $this->command = new Version4();
+            $this->commandName = new Version4();
         }
 
         if ($this->isThirdVersion()) {
-            $this->command = new Version3();
-
+            $this->commandName = new Version3();
         }
     }
 
@@ -198,7 +193,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purge($expr)
     {
-        return $this->command($this->command->getPurgeCommand() . ' ' . $expr);
+        return $this->command($this->commandName->getPurgeCommand() . ' ' . $expr);
     }
 
     /**
@@ -212,7 +207,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purgeUrl($url)
     {
-        return $this->command($this->command->getPurgeUrlCommand() . ' ' . $url);
+        return $this->command($this->commandName->getPurgeUrlCommand() . ' ' . $url);
     }
 
     /**
@@ -221,7 +216,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function quit()
     {
         try {
-            $this->command($this->command->getQuit(), null, 500);
+            $this->command($this->commandName->getQuit(), null, 500);
         } catch (Exception $Ex) {
             // silent fail - force close of socket
         }
@@ -248,7 +243,7 @@ class VarnishAdminSocket implements VarnishAdmin
 
             return true;
         }
-        $this->command($this->command->getStart());
+        $this->command($this->commandName->getStart());
 
         return true;
     }
@@ -256,7 +251,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function status()
     {
         try {
-            $response = $this->command($this->command->getStatus());
+            $response = $this->command($this->commandName->getStatus());
 
             return $this->isRunning($response);
         } catch (\Exception $Ex) {
@@ -301,7 +296,7 @@ class VarnishAdminSocket implements VarnishAdmin
             return true;
         }
 
-        $this->command($this->command->getStop());
+        $this->command($this->commandName->getStop());
 
         return true;
     }
