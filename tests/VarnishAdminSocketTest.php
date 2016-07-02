@@ -20,16 +20,16 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
 
     public function testConstructDefaultValues()
     {
-        $this->assertSame($this->admin->host, '127.0.0.1');
-        $this->assertSame($this->admin->port, 6082);
+        $this->assertSame($this->admin->getServerAddress()->getHost(), '127.0.0.1');
+        $this->assertSame($this->admin->getServerAddress()->getPort(), 6082);
         $this->assertSame($this->admin->version, 3);
     }
 
     public function testConstructVersion4Values()
     {
         $admin = new VarnishAdminSocketFake('127.0.0.1', 6082, '4.0.2');
-        $this->assertSame($admin->host, '127.0.0.1');
-        $this->assertSame($admin->port, 6082);
+        $this->assertSame($admin->getServerAddress()->getHost(), '127.0.0.1');
+        $this->assertSame($admin->getServerAddress()->getPort(), 6082);
         $this->assertSame($admin->version, 4);
     }
 

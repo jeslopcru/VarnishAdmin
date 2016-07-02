@@ -9,8 +9,6 @@ use VarnishAdmin\version\Version4;
 
 class VarnishAdminSocket implements VarnishAdmin
 {
-    const DEFAULT_HOST = '127.0.0.1';
-    const DEFAULT_PORT = 6082;
     const DEFAULT_VERSION = '3';
     const THIRD_VERSION = 3;
     const FOURTH_VERSION = 4;
@@ -43,6 +41,8 @@ class VarnishAdminSocket implements VarnishAdmin
     /** @var  Version */
     private $commandName;
     private $socket;
+    /** @var ServerAddress */
+    private $serverAddress;
 
     /**
      * Constructor.
@@ -55,30 +55,12 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function __construct($host = null, $port = null, $version = null)
     {
-        $this->setHost($host);
-        $this->setPort($port);
-
+        $this->serverAddress = new ServerAddress($host, $port);
         $this->setVersion($version);
 
         $this->checkSupportedVersion();
         $this->setDefaultCommands();
         $this->socket = new Socket();
-    }
-
-    private function setHost($host)
-    {
-        $this->host = $host;
-        if (empty($this->host)) {
-            $this->host = self::DEFAULT_HOST;
-        }
-    }
-
-    private function setPort($port)
-    {
-        $this->port = $port;
-        if (empty($this->port)) {
-            $this->port = self::DEFAULT_PORT;
-        }
     }
 
     private function setVersion($version)
@@ -134,7 +116,7 @@ class VarnishAdminSocket implements VarnishAdmin
         if (empty($timeout)) {
             $timeout = self::DEFAULT_TIMEOUT;
         }
-        $this->socket->openSocket($this->host, $this->port, $timeout);
+        $this->socket->openSocket($this->getServerAddress()->getHost(), $this->getServerAddress()->getPort(), $timeout);
         // connecting should give us the varnishadm banner with a 200 code, or 107 for auth challenge
         $banner = $this->socket->read($code);
         if ($code === 107) {
@@ -150,10 +132,19 @@ class VarnishAdminSocket implements VarnishAdmin
             }
         }
         if ($code !== 200) {
-            throw new \Exception(sprintf('Bad response from varnishadm on %s:%s', $this->host, $this->port));
+            throw new \Exception(sprintf('Bad response from varnishadm on %s:%s', $this->serverAddress->getHost(),
+                $this->serverAddress->getPort()));
         }
 
         return $banner;
+    }
+
+    /**
+     * @return ServerAddress
+     */
+    public function getServerAddress()
+    {
+        return $this->serverAddress;
     }
 
     /**
@@ -168,7 +159,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     protected function command($cmd, $code = '', $ok = 200)
     {
-        if (!$this->host) {
+        if (!$this->serverAddress->getHost()) {
             return null;
         }
         $cmd && $this->socket->write($cmd);
@@ -239,7 +230,7 @@ class VarnishAdminSocket implements VarnishAdmin
     {
         if ($this->status()) {
             $this->generateErrorMessage(sprintf('varnish host already started on %s:%s',
-                $this->host, $this->port));
+                $this->serverAddress->getHost(), $this->serverAddress->getPort()));
 
             return true;
         }
@@ -291,7 +282,7 @@ class VarnishAdminSocket implements VarnishAdmin
     {
         if (!$this->status()) {
             $this->generateErrorMessage(sprintf('varnish host already stopped on %s:%s',
-                $this->host, $this->port));
+                $this->serverAddress->getHost(), $this->serverAddress->getPort()));
 
             return true;
         }
