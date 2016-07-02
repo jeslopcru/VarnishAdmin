@@ -117,12 +117,10 @@ class VarnishAdminSocket implements VarnishAdmin
         $this->purgeCommand = 'ban';
 
         if ($this->isFourthVersion()) {
-            $this->purgeUrlCommand = $this->purgeCommand . ' req.url ~';
             $this->command = new Version4();
         }
 
         if ($this->isThirdVersion()) {
-            $this->purgeUrlCommand = $this->purgeCommand . '.url';
             $this->command = new Version3();
 
         }
@@ -275,7 +273,7 @@ class VarnishAdminSocket implements VarnishAdmin
         return $result[1] === 'running' ? true : false;
     }
 
-    protected function generateErrorMessage($msg)
+    private function generateErrorMessage($msg)
     {
         trigger_error($msg, E_USER_NOTICE);
     }
