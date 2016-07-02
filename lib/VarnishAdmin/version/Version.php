@@ -1,17 +1,56 @@
 <?php
 namespace VarnishAdmin\version;
 
-interface Version
+abstract class Version
 {
-    public function getPurgeCommand();
+    const QUIT = 'quit';
+    const START = 'start';
+    const STATUS = 'status';
+    const STOP = 'stop';
+    const BAN = 'ban';
 
-    public function getQuit();
+    /**
+     * @return string
+     */
+    public function getPurgeCommand()
+    {
+        return self::BAN;
+    }
 
-    public function getPurgeUrlCommand();
+    /**
+     * @return string
+     */
+    public function getQuit()
+    {
+        return self::QUIT;
+    }
 
-    public function getStart();
+    /**
+     * @return string
+     */
+    abstract public function getPurgeUrlCommand();
 
-    public function getStatus();
+    /**
+     * @return string
+     */
+    public function getStart()
+    {
+        return self::START;
+    }
 
-    public function getStop();
+    /**
+     * @return string
+     */
+    public function getStatus()
+    {
+        return self::STATUS;
+    }
+
+    /**
+     * @return string
+     */
+    public function getStop()
+    {
+        return self::STOP;
+    }
 }
