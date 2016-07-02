@@ -3,6 +3,8 @@ namespace VarnishAdmin\version;
 
 abstract class Version
 {
+    const DEFAULT_VERSION = '3';
+
     const QUIT = 'quit';
     const START = 'start';
     const STATUS = 'status';
@@ -29,6 +31,11 @@ abstract class Version
      * @return string
      */
     abstract public function getPurgeUrlCommand();
+
+    /**
+     * @return string
+     */
+    abstract public function getVersionNumber();
 
     /**
      * @return string

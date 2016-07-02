@@ -9,22 +9,8 @@ use VarnishAdmin\version\Version4;
 
 class VarnishAdminSocket implements VarnishAdmin
 {
-    const DEFAULT_VERSION = '3';
-    const THIRD_VERSION = 3;
-    const FOURTH_VERSION = 4;
     const DEFAULT_TIMEOUT = 5;
-    /**
-     * Host on which varnishadm is listening.
-     *
-     * @var string
-     */
-    protected $host;
-    /**
-     * Port on which varnishadm is listening, usually 6082.
-     *
-     * @var int port
-     */
-    protected $port;
+
     /**
      * Secret to use in authentication challenge.
      *
@@ -40,6 +26,7 @@ class VarnishAdminSocket implements VarnishAdmin
 
     /** @var  Version */
     private $commandName;
+    /** @var Socket */
     private $socket;
     /** @var ServerAddress */
     private $serverAddress;
@@ -57,8 +44,6 @@ class VarnishAdminSocket implements VarnishAdmin
     {
         $this->serverAddress = new ServerAddress($host, $port);
         $this->setVersion($version);
-
-        $this->checkSupportedVersion();
         $this->setDefaultCommands();
         $this->socket = new Socket();
     }
@@ -66,10 +51,23 @@ class VarnishAdminSocket implements VarnishAdmin
     private function setVersion($version)
     {
         if (empty($version)) {
-            $version = self::DEFAULT_VERSION;
+            $version = Version::DEFAULT_VERSION;
         }
-        $versionSplit = explode('.', $version, self::THIRD_VERSION);
-        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : self::THIRD_VERSION;
+        $versionSplit = explode('.', $version, Version::DEFAULT_VERSION);
+        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : Version::DEFAULT_VERSION;
+    }
+
+    private function setDefaultCommands()
+    {
+        $this->checkSupportedVersion();
+
+        if ($this->isFourthVersion()) {
+            $this->commandName = new Version4();
+        }
+
+        if ($this->isThirdVersion()) {
+            $this->commandName = new Version3();
+        }
     }
 
     private function checkSupportedVersion()
@@ -84,23 +82,12 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     private function isFourthVersion()
     {
-        return $this->version == self::FOURTH_VERSION;
+        return $this->version == Version4::NUMBER;
     }
 
     private function isThirdVersion()
     {
-        return $this->version == self::THIRD_VERSION;
-    }
-
-    private function setDefaultCommands()
-    {
-        if ($this->isFourthVersion()) {
-            $this->commandName = new Version4();
-        }
-
-        if ($this->isThirdVersion()) {
-            $this->commandName = new Version3();
-        }
+        return $this->version == Version3::NUMBER;
     }
 
     /**
