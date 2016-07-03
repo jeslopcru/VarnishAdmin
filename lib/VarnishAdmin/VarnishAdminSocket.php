@@ -97,7 +97,6 @@ class VarnishAdminSocket implements VarnishAdmin
      * @param int $timeout in seconds, defaults to 5; used for connect and reads
      * @return string the banner, in case you're interested
      * @throws Exception
-     * @throws \Exception
      */
     public function connect($timeout = null)
     {
@@ -105,17 +104,15 @@ class VarnishAdminSocket implements VarnishAdmin
             $timeout = self::DEFAULT_TIMEOUT;
         }
         $this->socket->openSocket($this->getServerAddress()->getHost(), $this->getServerAddress()->getPort(), $timeout);
-        // connecting should give us the varnishadm banner with a 200 code, or 107 for auth challenge
+
         $banner = $this->socket->read($code);
         if ($this->needAuthenticate($code)) {
-            if (empty($this->secret)) {
-                throw new \Exception('Authentication required; see VarnishAdminSocket::setSecret');
-            }
+            $this->checkSecretIsSet();
             try {
                 $authenticationCommand = $this->commandName->getAuth() . $this->obtainAuthenticationData($banner);
                 $banner = $this->command($authenticationCommand, $code, self::SUCCESS_STATUS);
-            } catch (\Exception $ex) {
-                throw new \Exception('Authentication failed');
+            } catch (Exception $ex) {
+                throw new Exception('Authentication failed');
             }
         }
         $this->checkResponse($code);
@@ -138,6 +135,13 @@ class VarnishAdminSocket implements VarnishAdmin
     private function needAuthenticate($code)
     {
         return $code === 107;
+    }
+
+    private function checkSecretIsSet()
+    {
+        if (empty($this->secret)) {
+            throw new \Exception('Authentication required; see VarnishAdminSocket::setSecret');
+        }
     }
 
     /**
@@ -173,10 +177,20 @@ class VarnishAdminSocket implements VarnishAdmin
         $this->socket->write(self::NEW_LINE);
         $response = $this->socket->read($code);
         if ($code !== $ok) {
-            $response = implode("\n > ", explode(self::NEW_LINE, trim($response)));
-            throw new Exception(sprintf("%s command responded %d:\n > %s", $cmd, $code, $response), $code);
+            $responseParsed = $this->parseResponse($response);
+            throw new Exception(sprintf("%s command responded %d:\n > %s", $cmd, $code, $responseParsed), $code);
         }
 
+        return $response;
+    }
+
+    /**
+     * @param $response
+     * @return string
+     */
+    protected function parseResponse($response)
+    {
+        $response = implode(self::NEW_LINE . " > ", explode(self::NEW_LINE, trim($response)));
         return $response;
     }
 
