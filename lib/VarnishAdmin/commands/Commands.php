@@ -1,7 +1,7 @@
 <?php
-namespace VarnishAdmin\version;
+namespace VarnishAdmin\commands;
 
-abstract class Version
+abstract class Commands
 {
     const DEFAULT_VERSION = '3';
 

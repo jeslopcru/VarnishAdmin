@@ -1,10 +1,10 @@
 <?php
-namespace VarnishAdmin\version;
+namespace VarnishAdmin\commands;
 
-class Version3 extends Version
+class CommandsVersion4 extends Commands
 {
-    const NUMBER = 3;
-    const URL = '.url';
+    const NUMBER = 4;
+    const URL = ' req.url ~';
 
     public function getPurgeUrlCommand()
     {

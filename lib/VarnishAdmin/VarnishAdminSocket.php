@@ -3,9 +3,9 @@
 namespace VarnishAdmin;
 
 use Exception;
-use VarnishAdmin\version\Version;
-use VarnishAdmin\version\Version3;
-use VarnishAdmin\version\Version4;
+use VarnishAdmin\commands\Commands;
+use VarnishAdmin\commands\CommandsVersion3;
+use VarnishAdmin\commands\CommandsVersion4;
 
 class VarnishAdminSocket implements VarnishAdmin
 {
@@ -26,8 +26,8 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     protected $version;
 
-    /** @var Version */
-    private $commandName;
+    /** @var Commands */
+    private $commands;
     /** @var Socket */
     private $socket;
     /** @var ServerAddress */
@@ -44,20 +44,29 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function __construct($host = null, $port = null, $version = null)
     {
-        $this->setVersion($version);
-        $this->checkSupportedVersion();
+        $this->calculateVersion($version);
         $this->setDefaultCommands();
         $this->serverAddress = new ServerAddress($host, $port);
         $this->socket = new Socket();
     }
 
+    /**
+     * @param $version
+     * @throws Exception
+     */
+    private function calculateVersion($version)
+    {
+        $this->setVersion($version);
+        $this->checkSupportedVersion();
+    }
+
     private function setVersion($version)
     {
         if (empty($version)) {
-            $version = Version::DEFAULT_VERSION;
+            $version = Commands::DEFAULT_VERSION;
         }
-        $versionSplit = explode('.', $version, Version::DEFAULT_VERSION);
-        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : Version::DEFAULT_VERSION;
+        $versionSplit = explode('.', $version, Commands::DEFAULT_VERSION);
+        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : Commands::DEFAULT_VERSION;
     }
 
     private function checkSupportedVersion()
@@ -72,22 +81,22 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     private function isFourthVersion()
     {
-        return $this->version == Version4::NUMBER;
+        return $this->version == CommandsVersion4::NUMBER;
     }
 
     private function isThirdVersion()
     {
-        return $this->version == Version3::NUMBER;
+        return $this->version == CommandsVersion3::NUMBER;
     }
 
     private function setDefaultCommands()
     {
         if ($this->isFourthVersion()) {
-            $this->commandName = new Version4();
+            $this->commands = new CommandsVersion4();
         }
 
         if ($this->isThirdVersion()) {
-            $this->commandName = new Version3();
+            $this->commands = new CommandsVersion3();
         }
     }
 
@@ -109,7 +118,7 @@ class VarnishAdminSocket implements VarnishAdmin
         if ($this->needAuthenticate($code)) {
             $this->checkSecretIsSet();
             try {
-                $authenticationCommand = $this->commandName->getAuth() . $this->obtainAuthenticationData($banner);
+                $authenticationCommand = $this->commands->getAuth() . $this->obtainAuthenticationData($banner);
                 $banner = $this->command($authenticationCommand, $code, self::SUCCESS_STATUS);
             } catch (Exception $ex) {
                 throw new Exception('Authentication failed');
@@ -227,7 +236,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purge($expr)
     {
-        return $this->command($this->commandName->getPurgeCommand() . ' ' . $expr);
+        return $this->command($this->commands->getPurgeCommand() . ' ' . $expr);
     }
 
     /**
@@ -241,7 +250,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purgeUrl($url)
     {
-        return $this->command($this->commandName->getPurgeUrlCommand() . ' ' . $url);
+        return $this->command($this->commands->getPurgeUrlCommand() . ' ' . $url);
     }
 
     /**
@@ -250,7 +259,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function quit()
     {
         try {
-            $this->command($this->commandName->getQuit(), null, 500);
+            $this->command($this->commands->getQuit(), null, 500);
         } catch (Exception $Ex) {
             // silent fail - force close of socket
         }
@@ -277,7 +286,7 @@ class VarnishAdminSocket implements VarnishAdmin
 
             return true;
         }
-        $this->command($this->commandName->getStart());
+        $this->command($this->commands->getStart());
 
         return true;
     }
@@ -285,7 +294,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function status()
     {
         try {
-            $response = $this->command($this->commandName->getStatus());
+            $response = $this->command($this->commands->getStatus());
 
             return $this->isRunning($response);
         } catch (\Exception $Ex) {
@@ -330,7 +339,7 @@ class VarnishAdminSocket implements VarnishAdmin
             return true;
         }
 
-        $this->command($this->commandName->getStop());
+        $this->command($this->commands->getStop());
 
         return true;
     }
