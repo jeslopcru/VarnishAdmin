@@ -71,7 +71,8 @@ class VarnishAdminSocket implements VarnishAdmin
 
     private function checkSupportedVersion()
     {
-        if (!$this->isFourthVersion() && !$this->isThirdVersion()) {
+        $isUnsupportedVersion = !$this->isFourthVersion() && !$this->isThirdVersion();
+        if ($isUnsupportedVersion) {
             throw new \Exception('Only versions 3 and 4 of Varnish are supported');
         }
     }
@@ -118,8 +119,8 @@ class VarnishAdminSocket implements VarnishAdmin
         if ($this->needAuthenticate($code)) {
             $this->checkSecretIsSet();
             try {
-                $authenticationCommand = $this->commands->getAuth() . $this->obtainAuthenticationData($banner);
-                $banner = $this->command($authenticationCommand, $code, self::SUCCESS_STATUS);
+                $authenticationData = $this->commands->getAuth() . $this->obtainAuthenticationKey($banner);
+                $banner = $this->command($authenticationData, $code, self::SUCCESS_STATUS);
             } catch (Exception $ex) {
                 throw new Exception('Authentication failed');
             }
@@ -157,7 +158,7 @@ class VarnishAdminSocket implements VarnishAdmin
      * @param $banner
      * @return string
      */
-    private function obtainAuthenticationData($banner)
+    private function obtainAuthenticationKey($banner)
     {
         $challenge = substr($banner, 0, 32);
         $secret = $this->secret . $challenge . self::NEW_LINE;
