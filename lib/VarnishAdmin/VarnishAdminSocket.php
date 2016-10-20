@@ -3,21 +3,16 @@
 namespace VarnishAdmin;
 
 use Exception;
+use VarnishAdmin\commands\Commands;
+use VarnishAdmin\commands\CommandsVersion3;
+use VarnishAdmin\commands\CommandsVersion4;
 
 class VarnishAdminSocket implements VarnishAdmin
 {
-    /**
-     * Host on which varnishadm is listening.
-     *
-     * @var string
-     */
-    protected $host;
-    /**
-     * Port on which varnishadm is listening, usually 6082.
-     *
-     * @var int port
-     */
-    protected $port;
+    const DEFAULT_TIMEOUT = 5;
+    const NEW_LINE = "\n";
+    const SUCCESS_STATUS = 200;
+
     /**
      * Secret to use in authentication challenge.
      *
@@ -30,13 +25,13 @@ class VarnishAdminSocket implements VarnishAdmin
      * @var int
      */
     protected $version;
-    protected $purgeCommand;
-    protected $quit;
-    protected $purgeUrlCommand;
-    /**
-     * Socket pointer.
-     */
-    private $fp;
+
+    /** @var Commands */
+    private $commands;
+    /** @var Socket */
+    private $socket;
+    /** @var ServerAddress */
+    private $serverAddress;
 
     /**
      * Constructor.
@@ -47,34 +42,63 @@ class VarnishAdminSocket implements VarnishAdmin
      *
      * @throws \Exception
      */
-    public function __construct($host = '127.0.0.1', $port = 6082, $version = '3.04')
+    public function __construct($host = null, $port = null, $version = null)
     {
-        $this->host = $host;
-        $this->port = $port;
+        $this->calculateVersion($version);
+        $this->setDefaultCommands();
+        $this->serverAddress = new ServerAddress($host, $port);
+        $this->socket = new Socket();
+    }
 
+    /**
+     * @param $version
+     * @throws Exception
+     */
+    private function calculateVersion($version)
+    {
         $this->setVersion($version);
+        $this->checkSupportedVersion();
+    }
 
-        //default command values
-        $this->quit = 'quit';
-        $this->purgeCommand = 'ban';
+    private function setVersion($version)
+    {
+        if (empty($version)) {
+            $version = Commands::DEFAULT_VERSION;
+        }
+        $versionSplit = explode('.', $version, Commands::DEFAULT_VERSION);
+        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : Commands::DEFAULT_VERSION;
+    }
 
-        //Different directives depends Varnish version
-        if ($this->version == 4) {
-            $this->purgeUrlCommand = $this->purgeCommand . ' req.url ~';
-        } elseif ($this->version == 3) {
-            $this->purgeUrlCommand = $this->purgeCommand . '.url';
-        } else {
+    private function checkSupportedVersion()
+    {
+        $isUnsupportedVersion = !$this->isFourthVersion() && !$this->isThirdVersion();
+        if ($isUnsupportedVersion) {
             throw new \Exception('Only versions 3 and 4 of Varnish are supported');
         }
     }
 
     /**
-     * @param int $version by default version 3
+     * @return bool
      */
-    protected function setVersion($version)
+    private function isFourthVersion()
     {
-        $versionSplit = explode('.', $version, 3);
-        $this->version = isset($versionSplit[0]) ? (int)$versionSplit[0] : 3;
+        return $this->version == CommandsVersion4::NUMBER;
+    }
+
+    private function isThirdVersion()
+    {
+        return $this->version == CommandsVersion3::NUMBER;
+    }
+
+    private function setDefaultCommands()
+    {
+        if ($this->isFourthVersion()) {
+            $this->commands = new CommandsVersion4();
+        }
+
+        if ($this->isThirdVersion()) {
+            $this->commands = new CommandsVersion3();
+        }
     }
 
     /**
@@ -83,86 +107,63 @@ class VarnishAdminSocket implements VarnishAdmin
      * @param int $timeout in seconds, defaults to 5; used for connect and reads
      * @return string the banner, in case you're interested
      * @throws Exception
-     * @throws \Exception
      */
-    public function connect($timeout = 5)
+    public function connect($timeout = null)
     {
-        $this->openSocket($timeout);
-        // connecting should give us the varnishadm banner with a 200 code, or 107 for auth challenge
-        $banner = $this->read($code);
-        if ($code === 107) {
-            if (!$this->secret) {
-                throw new \Exception('Authentication required; see VarnishAdminSocket::setSecret');
-            }
+        if (empty($timeout)) {
+            $timeout = self::DEFAULT_TIMEOUT;
+        }
+        $this->socket->openSocket($this->getServerAddress()->getHost(), $this->getServerAddress()->getPort(), $timeout);
+
+        $banner = $this->socket->read($code);
+        if ($this->needAuthenticate($code)) {
+            $this->checkSecretIsSet();
             try {
-                $challenge = substr($banner, 0, 32);
-                $response = hash('sha256', $challenge . "\n" . $this->secret . $challenge . "\n");
-                $banner = $this->command('auth ' . $response, $code, 200);
-            } catch (\Exception $ex) {
-                throw new \Exception('Authentication failed');
+                $authenticationData = $this->commands->getAuth() . $this->obtainAuthenticationKey($banner);
+                $banner = $this->command($authenticationData, $code, self::SUCCESS_STATUS);
+            } catch (Exception $ex) {
+                throw new Exception('Authentication failed');
             }
         }
-        if ($code !== 200) {
-            throw new \Exception(sprintf('Bad response from varnishadm on %s:%s', $this->host, $this->port));
-        }
+        $this->checkResponse($code);
 
         return $banner;
     }
 
     /**
-     * @param integer $timeout
-     * @throws Exception
+     * @return ServerAddress
      */
-    protected function openSocket($timeout)
+    public function getServerAddress()
     {
-        $errno = null;
-        $errstr = null;
-        $this->fp = fsockopen($this->host, $this->port, $errno, $errstr, $timeout);
-        if (!is_resource($this->fp)) {
-            // error would have been raised already by fsockopen
-            throw new Exception(sprintf('Failed to connect to varnishadm on %s:%s; "%s"', $this->host, $this->port,
-                $errstr));
-        }
-        // set socket options
-        stream_set_blocking($this->fp, 1);
-        stream_set_timeout($this->fp, $timeout);
+        return $this->serverAddress;
     }
 
     /**
      * @param $code
-     * @return string
-     * @throws Exception
-     * @internal param reference $int for reply code
+     * @return bool
      */
-    protected function read(&$code)
+    private function needAuthenticate($code)
     {
-        $code = null;
-        $len = null;
-        // get bytes until we have either a response code and message length or an end of file
-        // code should be on first line, so we should get it in one chunk
-        while (!feof($this->fp)) {
-            $response = fgets($this->fp, 1024);
-            if (!$response) {
-                $meta = stream_get_meta_data($this->fp);
-                if ($meta['timed_out']) {
-                    throw new Exception(sprintf('Timed out reading from socket %s:%s', $this->host, $this->port));
-                }
-            }
-            if (preg_match('/^(\d{3}) (\d+)/', $response, $r)) {
-                $code = (int)$r[1];
-                $len = (int)$r[2];
-                break;
-            }
-        }
-        if (is_null($code)) {
-            throw new Exception('Failed to get numeric code in response');
-        }
-        $response = '';
-        while (!feof($this->fp) && strlen($response) < $len) {
-            $response .= fgets($this->fp, 1024);
-        }
+        return $code === 107;
+    }
 
-        return $response;
+    private function checkSecretIsSet()
+    {
+        if (empty($this->secret)) {
+            throw new \Exception('Authentication required; see VarnishAdminSocket::setSecret');
+        }
+    }
+
+    /**
+     * @param $banner
+     * @return string
+     */
+    private function obtainAuthenticationKey($banner)
+    {
+        $challenge = substr($banner, 0, 32);
+        $secret = $this->secret . $challenge . self::NEW_LINE;
+        $response = hash('sha256', $challenge . self::NEW_LINE . $secret);
+        return $response . ' ';
     }
 
     /**
@@ -177,36 +178,52 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     protected function command($cmd, $code = '', $ok = 200)
     {
-        if (!$this->host) {
+        if (!$this->serverAddress->getHost()) {
             return null;
         }
-        $cmd && $this->write($cmd);
-        $this->write("\n");
-        $response = $this->read($code);
+        if (!empty($cmd)) {
+            $this->socket->write($cmd);
+        }
+        $this->socket->write(self::NEW_LINE);
+        $response = $this->socket->read($code);
         if ($code !== $ok) {
-            $response = implode("\n > ", explode("\n", trim($response)));
-            throw new Exception(sprintf("%s command responded %d:\n > %s", $cmd, $code, $response), $code);
+            $responseParsed = $this->parseResponse($response);
+            throw new Exception(sprintf("%s command responded %d:\n > %s", $cmd, $code, $responseParsed), $code);
         }
 
         return $response;
     }
 
     /**
-     * Write data to the socket input stream.
-     *
-     * @param $data
-     * @return bool
-     * @throws Exception
-     * @internal param $string
+     * @param $response
+     * @return string
      */
-    private function write($data)
+    protected function parseResponse($response)
     {
-        $bytes = fputs($this->fp, $data);
-        if ($bytes !== strlen($data)) {
-            throw new Exception(sprintf('Failed to write to varnishadm on %s:%s', $this->host, $this->port));
-        }
+        $response = implode(self::NEW_LINE . " > ", explode(self::NEW_LINE, trim($response)));
+        return $response;
+    }
 
-        return true;
+    /**
+     * @param $code
+     * @throws Exception
+     */
+    private function checkResponse($code)
+    {
+        if ($this->isBad($code)) {
+            throw new \Exception(sprintf('Bad response from varnishadm on %s:%s',
+                $this->serverAddress->getHost(),
+                $this->serverAddress->getPort()));
+        }
+    }
+
+    /**
+     * @param $code
+     * @return bool
+     */
+    private function isBad($code)
+    {
+        return $code !== self::SUCCESS_STATUS;
     }
 
     /**
@@ -220,7 +237,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purge($expr)
     {
-        return $this->command($this->purgeCommand . ' ' . $expr);
+        return $this->command($this->commands->getPurgeCommand() . ' ' . $expr);
     }
 
     /**
@@ -234,7 +251,7 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function purgeUrl($url)
     {
-        return $this->command($this->purgeUrlCommand . ' ' . $url);
+        return $this->command($this->commands->getPurgeUrlCommand() . ' ' . $url);
     }
 
     /**
@@ -243,7 +260,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function quit()
     {
         try {
-            $this->command('quit', null, 500);
+            $this->command($this->commands->getQuit(), null, 500);
         } catch (Exception $Ex) {
             // silent fail - force close of socket
         }
@@ -255,8 +272,8 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function close()
     {
-        is_resource($this->fp) && fclose($this->fp);
-        $this->fp = null;
+        $this->socket->close();
+        $this->socket = null;
     }
 
     /**
@@ -265,25 +282,20 @@ class VarnishAdminSocket implements VarnishAdmin
     public function start()
     {
         if ($this->status()) {
-            $this->generateErrorMassage(sprintf('varnish host already started on %s:%s',
-                $this->host, $this->port));
+            $this->generateErrorMessage(sprintf('varnish host already started on %s:%s',
+                $this->serverAddress->getHost(), $this->serverAddress->getPort()));
 
             return true;
         }
-        $this->command('start');
+        $this->command($this->commands->getStart());
 
         return true;
     }
 
-    /**
-     * Test varnish child status.
-     *
-     * @return bool whether child is alive
-     */
     public function status()
     {
         try {
-            $response = $this->command('status');
+            $response = $this->command($this->commands->getStatus());
 
             return $this->isRunning($response);
         } catch (\Exception $Ex) {
@@ -291,21 +303,16 @@ class VarnishAdminSocket implements VarnishAdmin
         }
     }
 
-    /**
-     * @param null|string $response
-     */
     protected function isRunning($response)
     {
-        if (!preg_match('/Child in state (\w+)/', $response, $r)) {
+        if (!preg_match('/Child in state (\w+)/', $response, $result)) {
             return false;
         }
 
-        $result = $r[1] === 'running' ? true : false;
-
-        return $result;
+        return $result[1] === 'running' ? true : false;
     }
 
-    protected function generateErrorMassage($msg)
+    private function generateErrorMessage($msg)
     {
         trigger_error($msg, E_USER_NOTICE);
     }
@@ -327,14 +334,30 @@ class VarnishAdminSocket implements VarnishAdmin
     public function stop()
     {
         if (!$this->status()) {
-            $this->generateErrorMassage(sprintf('varnish host already stopped on %s:%s',
-                $this->host, $this->port));
+            $this->generateErrorMessage(sprintf('varnish host already stopped on %s:%s',
+                $this->serverAddress->getHost(), $this->serverAddress->getPort()));
 
             return true;
         }
 
-        $this->command('stop');
+        $this->command($this->commands->getStop());
 
         return true;
+    }
+
+    /**
+     * @return Socket
+     */
+    public function getSocket()
+    {
+        return $this->socket;
+    }
+
+    /**
+     * @param Socket $socket
+     */
+    public function setSocket($socket)
+    {
+        $this->socket = $socket;
     }
 }

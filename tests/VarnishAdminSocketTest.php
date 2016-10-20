@@ -1,29 +1,35 @@
 <?php
+namespace VarnishAdmin\Tests;
 
-use VarnishAdmin\VarnishAdminSocket;
+use Exception;
+use PHPUnit_Framework_TestCase;
+use VarnishAdmin;
 
 class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
 {
     /** @var VarnishAdminSocketFake */
     public $admin;
+    public $stubSocket;
 
     public function setUp()
     {
         $this->admin = new VarnishAdminSocketFake();
+        $this->stubSocket = new StubSocket();
+        $this->admin->setSocket($this->stubSocket);
     }
 
     public function testConstructDefaultValues()
     {
-        $this->assertSame($this->admin->host, '127.0.0.1');
-        $this->assertSame($this->admin->port, 6082);
+        $this->assertSame($this->admin->getServerAddress()->getHost(), '127.0.0.1');
+        $this->assertSame($this->admin->getServerAddress()->getPort(), 6082);
         $this->assertSame($this->admin->version, 3);
     }
 
     public function testConstructVersion4Values()
     {
         $admin = new VarnishAdminSocketFake('127.0.0.1', 6082, '4.0.2');
-        $this->assertSame($admin->host, '127.0.0.1');
-        $this->assertSame($admin->port, 6082);
+        $this->assertSame($admin->getServerAddress()->getHost(), '127.0.0.1');
+        $this->assertSame($admin->getServerAddress()->getPort(), 6082);
         $this->assertSame($admin->version, 4);
     }
 
@@ -38,48 +44,48 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     public function testCloseConnection()
     {
         $this->admin->close();
-        $this->assertNull($this->admin->fp);
+        $this->assertNull($this->admin->getSocket());
     }
 
     public function testConnectOk()
     {
-        $this->admin->codeMock = 200;
+        $this->stubSocket->codeMock = 200;
         $this->assertNull($this->admin->connect());
     }
 
     /**
-     * @throws \VarnishAdmin\Exception
+     * @throws Exception
      * @expectedException Exception
      * @expectedExceptionMessage Authentication required; see VarnishAdminSocket::setSecret
      */
     public function testConnectAuthenticationRequiredNotSecretDefined()
     {
-        $this->admin->codeMock = 107;
+        $this->stubSocket->codeMock = 107;
         $this->admin->secret = false;
         $this->assertNull($this->admin->connect());
     }
 
     /**
-     * @throws \VarnishAdmin\Exception
+     * @throws Exception
      * @expectedException Exception
      * @expectedExceptionMessage Authentication failed
      */
     public function testConnectAuthenticationFailed()
     {
-        $this->admin->codeMock = 107;
+        $this->stubSocket->codeMock = 107;
         $this->admin->secret = true;
         $this->admin->commandResultException = 'Authentication failed';
         $this->assertNull($this->admin->connect());
     }
 
     /**
-     * @throws \VarnishAdmin\Exception
+     * @throws Exception
      * @expectedException Exception
      * @expectedExceptionMessage Bad response from varnishadm on 127.0.0.1:6082
      */
     public function testConnectBadResponse()
     {
-        $this->admin->codeMock = 503;
+        $this->stubSocket->codeMock = 503;
         $this->admin->secret = true;
         $this->admin->commandResultException = sprintf('Bad response from varnishadm on %s:%s', $this->admin->host,
             $this->admin->port);
@@ -108,9 +114,8 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     public function testQuit()
     {
         $this->admin->quit();
-        $this->assertNull($this->admin->fp);
+        $this->assertNull($this->admin->getSocket());
         $this->assertContains('quit', $this->admin->commandExecuted);
-
     }
 
     public function testStart()
@@ -163,44 +168,5 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     public function testStopWhenNotRunning()
     {
         $this->assertEquals(true, @$this->admin->stop());
-    }
-}
-
-class VarnishAdminSocketFake extends VarnishAdminSocket
-{
-    public $host;
-    public $port;
-    public $fp;
-    public $secret;
-    public $version;
-
-    //Mocks
-    public $codeMock;
-    public $commandResultException;
-    public $commandExecuted = array();
-    public $isRunningMock;
-
-    protected function openSocket($timeout)
-    {
-    }
-
-    protected function read(&$code)
-    {
-        $code = $this->codeMock;
-    }
-
-    protected function command($cmd, $code = '', $ok = 200)
-    {
-        if (isset($this->commandResultException)) {
-            throw new Exception($this->commandResultException);
-        }
-        $this->commandExecuted[] = $cmd;
-
-        return $cmd;
-    }
-
-    protected function isRunning($response)
-    {
-        return $this->isRunningMock;
     }
 }
