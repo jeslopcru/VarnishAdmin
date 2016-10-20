@@ -53,6 +53,7 @@ Pull request are welcome using PSR-2, all issues are welcomed
 ## License
 The whole VarnishAdmin package, is released under the MIT license, see LICENSE.
 
+https://github.com/newsdev/docker-varnish
 
 Based on [timwhitlock/php-varnish](https://github.com/timwhitlock/php-varnish)
 
