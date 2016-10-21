@@ -175,7 +175,7 @@ class VarnishAdminSocket implements VarnishAdmin
      * @throws Exception
      * @internal param $string
      */
-    protected function command($cmd, $code = '', $ok = 200)
+    protected function command($cmd, &$code = '', $ok = 200)
     {
         if (!$this->host) {
             return null;
