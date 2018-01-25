@@ -1,5 +1,5 @@
 {
-  "name": "jeslopcru/varnishadmin",
+  "name": "neighborhoods/varnishadmin",
   "description": "Varnish admin socket for executing varnishadm CLI commands",
   "minimum-stability": "dev",
   "license": "MIT",

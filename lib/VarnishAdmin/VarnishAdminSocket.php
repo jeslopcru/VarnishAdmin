@@ -6,6 +6,7 @@ use Exception;
 use VarnishAdmin\commands\Commands;
 use VarnishAdmin\commands\CommandsVersion3;
 use VarnishAdmin\commands\CommandsVersion4;
+use VarnishAdmin\commands\CommandsVersion5;
 
 class VarnishAdminSocket implements VarnishAdmin
 {
@@ -71,10 +72,18 @@ class VarnishAdminSocket implements VarnishAdmin
 
     private function checkSupportedVersion()
     {
-        $isUnsupportedVersion = !$this->isFourthVersion() && !$this->isThirdVersion();
+        $isUnsupportedVersion = !$this->isFourthVersion() && !$this->isThirdVersion() && !$this->isFifthVersion();
         if ($isUnsupportedVersion) {
-            throw new \Exception('Only versions 3 and 4 of Varnish are supported');
+            throw new \Exception('Only versions 3, 4 and 5 of Varnish are supported');
         }
+    }
+
+    /**
+     * @return bool
+     */
+    private function isFifthVersion()
+    {
+        return $this->version == CommandsVersion5::NUMBER;
     }
 
     /**
@@ -98,6 +107,10 @@ class VarnishAdminSocket implements VarnishAdmin
 
         if ($this->isThirdVersion()) {
             $this->commands = new CommandsVersion3();
+        }
+
+        if ($this->isFifthVersion()) {
+            $this->commands = new CommandsVersion5();
         }
     }
 
