@@ -60,7 +60,7 @@ The whole VarnishAdmin package, is released under the MIT license, see LICENSE.
 
 https://github.com/newsdev/docker-varnish
 
-Based on [jeslopcru/VarnishAdmin](htps://github.com/jeslopcru/VarnishAdmin)
+Based on [jeslopcru/VarnishAdmin](https://github.com/jeslopcru/VarnishAdmin)
 
 Based on [timwhitlock/php-varnish](https://github.com/timwhitlock/php-varnish)
 
