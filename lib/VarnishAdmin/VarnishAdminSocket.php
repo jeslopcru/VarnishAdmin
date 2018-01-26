@@ -272,7 +272,7 @@ class VarnishAdminSocket implements VarnishAdmin
     public function quit()
     {
         try {
-            $this->command($this->commands->getQuit(), null, 500);
+            $this->command($this->commands->getQuit(), $code, 500);
         } catch (Exception $Ex) {
             // silent fail - force close of socket
         }
