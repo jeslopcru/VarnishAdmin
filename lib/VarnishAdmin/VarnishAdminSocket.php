@@ -174,9 +174,9 @@ class VarnishAdminSocket implements VarnishAdmin
     private function obtainAuthenticationKey($banner)
     {
         $challenge = substr($banner, 0, 32);
-        $secret = $this->secret . $challenge . self::NEW_LINE;
-        $response = hash('sha256', $challenge . self::NEW_LINE . $secret);
-        return $response . ' ';
+        $auth_string = $challenge . self::NEW_LINE . $this->secret . $challenge . self::NEW_LINE;
+        $response = hash('sha256', $auth_string);
+        return $response;
     }
 
     /**
@@ -189,7 +189,7 @@ class VarnishAdminSocket implements VarnishAdmin
      * @throws Exception
      * @internal param $string
      */
-    protected function command($cmd, $code = '', $ok = 200)
+    protected function command($cmd, &$code = '', $ok = 200)
     {
         if (!$this->serverAddress->getHost()) {
             return null;
