@@ -132,7 +132,7 @@ class VarnishAdminSocket implements VarnishAdmin
         if ($this->needAuthenticate($code)) {
             $this->checkSecretIsSet();
             try {
-                $authenticationData = $this->commands->getAuth() . $this->obtainAuthenticationKey($banner);
+                $authenticationData = $this->commands->getAuth() . ' ' . $this->obtainAuthenticationKey($banner);
                 $banner = $this->command($authenticationData, $code, self::SUCCESS_STATUS);
             } catch (Exception $ex) {
                 throw new Exception('Authentication failed');
@@ -203,7 +203,6 @@ class VarnishAdminSocket implements VarnishAdmin
             $responseParsed = $this->parseResponse($response);
             throw new Exception(sprintf("%s command responded %d:\n > %s", $cmd, $code, $responseParsed), $code);
         }
-
         return $response;
     }
 
