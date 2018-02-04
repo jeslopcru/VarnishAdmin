@@ -38,7 +38,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
      */
     public function testConstructNoSupportedVarnishVersion()
     {
-        new VarnishAdminSocketFake(1, 1, 5);
+        new VarnishAdminSocketFake(1, 1, 9);
     }
 
     public function testCloseConnection()

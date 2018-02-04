@@ -17,7 +17,7 @@ class VarnishAdminSocketFake extends VarnishAdminSocket
     public $commandExecuted = array();
     public $isRunningMock;
 
-    protected function command($cmd, $code = '', $ok = 200)
+    protected function command($cmd, &$code = '', $ok = 200)
     {
         if (isset($this->commandResultException)) {
             throw new Exception($this->commandResultException);
