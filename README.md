@@ -3,24 +3,23 @@
 VarnishAdmin is a PHP Library for manage Varnish reverse proxy cache commands using PHP
 
 
-
 ## Requirements
 
-VarnishAdmin is supported on PHP 5.5.* and up.
+VarnishAdmin is supported on PHP 5.6.* and up.
 
 
 ## Instalation
 
 To install this package, run the command below and you will get the latest version
 ```
-composer require neighborhoods/varnishadmin
+composer require jeslopcru/varnishadmin
 ```
 
 or include this in your composer.json
 ```
 {
   "require": {
-    "neighborhoods/varnishadmin": "dev-master"
+    "jeslopcru/varnishadmin": "dev-master"
   }
 }
 ```
@@ -34,6 +33,7 @@ It's very easy to use VarnishAdmin. If you have any question please open an issu
   $varnish = new VarnishAdminSocket('192.168.10.10', 6082, '5.0.0');
   $varnish->purgeUrl('example.com');
   $varnish->quit();
+```
 
 ### Varnish 4
 ```php
@@ -58,9 +58,7 @@ Pull request are welcome using PSR-2, all issues are welcomed
 ## License
 The whole VarnishAdmin package, is released under the MIT license, see LICENSE.
 
-https://github.com/newsdev/docker-varnish
-
-Based on [jeslopcru/VarnishAdmin](https://github.com/jeslopcru/VarnishAdmin)
+You can use this repo for Docker: https://github.com/newsdev/docker-varnish
 
 Based on [timwhitlock/php-varnish](https://github.com/timwhitlock/php-varnish)
 
