@@ -87,8 +87,11 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     {
         $this->stubSocket->codeMock = 503;
         $this->admin->secret = true;
-        $this->admin->commandResultException = sprintf('Bad response from varnishadm on %s:%s', $this->admin->host,
-            $this->admin->port);
+        $this->admin->commandResultException = sprintf(
+            'Bad response from varnishadm on %s:%s',
+            $this->admin->host,
+            $this->admin->port
+        );
         $this->assertNull($this->admin->connect());
     }
 

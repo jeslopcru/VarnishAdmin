@@ -223,9 +223,11 @@ class VarnishAdminSocket implements VarnishAdmin
     private function checkResponse($code)
     {
         if ($this->isBad($code)) {
-            throw new \Exception(sprintf('Bad response from varnishadm on %s:%s',
+            throw new \Exception(sprintf(
+                'Bad response from varnishadm on %s:%s',
                 $this->serverAddress->getHost(),
-                $this->serverAddress->getPort()));
+                $this->serverAddress->getPort()
+            ));
         }
     }
 
@@ -294,8 +296,11 @@ class VarnishAdminSocket implements VarnishAdmin
     public function start()
     {
         if ($this->status()) {
-            $this->generateErrorMessage(sprintf('varnish host already started on %s:%s',
-                $this->serverAddress->getHost(), $this->serverAddress->getPort()));
+            $this->generateErrorMessage(sprintf(
+                'varnish host already started on %s:%s',
+                $this->serverAddress->getHost(),
+                $this->serverAddress->getPort()
+            ));
 
             return true;
         }
@@ -346,8 +351,11 @@ class VarnishAdminSocket implements VarnishAdmin
     public function stop()
     {
         if (!$this->status()) {
-            $this->generateErrorMessage(sprintf('varnish host already stopped on %s:%s',
-                $this->serverAddress->getHost(), $this->serverAddress->getPort()));
+            $this->generateErrorMessage(sprintf(
+                'varnish host already stopped on %s:%s',
+                $this->serverAddress->getHost(),
+                $this->serverAddress->getPort()
+            ));
 
             return true;
         }
