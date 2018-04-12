@@ -241,6 +241,47 @@ class VarnishAdminSocket implements VarnishAdmin
     }
 
     /**
+     * Shortcut to backend list function.
+     *
+     * @return string
+     *
+     * Example Output:
+     *
+     * Backend name                   Admin      Probe
+     * boot.web01                     probe      Healthy 6/6
+     * boot.web02                     probe      Healthy 6/6
+     * boot.web03                     probe      Healthy 3/6
+     */
+    public function backendList()
+    {
+        $response = $this->command($this->commands->getBackendList());
+        // Let's turn this result into a PHP object so its easier to use in Code.
+        $lines = explode(PHP_EOL, $response);
+        $respArr = array();
+        $i = 0;
+        $colArr;
+        $numCols;
+        foreach($lines as $line) {
+            $line = trim($line);
+            if($line != '') {
+                if($i === 0) {  // First line should be our columns, all others should be our values.
+                    $colArr = preg_split('/\s\s+/', $line);
+                    $numCols = count($colArr);
+                    $respArr = array_fill_keys($colArr, array());
+                    $i++;
+                } else {
+                    $lineArr = preg_split('/\s\s+/', $line);
+                    for($j = 0; $j < $numCols; $j++) {
+                        $key = $colArr[$j]; // Look up key
+                        $respArr[$key][] = $lineArr[$j];
+                    }
+                }
+            }
+        }
+        return $respArr;
+    }
+
+    /**
      * Shortcut to purge function.
      *
      * @see https://www.varnish-cache.org/docs/4.0/users-guide/purging.html
@@ -342,7 +383,8 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function setSecret($secret)
     {
-        $this->secret = $secret;
+        // Secret requires a new line at the end, so if its not there, lets add it.
+        $this->secret = (strpos($secret, self::NEW_LINE) === (strlen($secret) - 1)) ? $secret : $secret.self::NEW_LINE;
     }
 
     /**
