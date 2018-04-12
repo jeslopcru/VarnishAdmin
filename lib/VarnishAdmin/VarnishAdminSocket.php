@@ -241,6 +241,16 @@ class VarnishAdminSocket implements VarnishAdmin
     }
 
     /**
+     * Shortcut to backend list function.
+     *
+     * @return string
+     */
+    public function backendList()
+    {
+        return $this->command($this->commands->getBackendList());
+    }
+
+    /**
      * Shortcut to purge function.
      *
      * @see https://www.varnish-cache.org/docs/4.0/users-guide/purging.html
@@ -342,7 +352,8 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function setSecret($secret)
     {
-        $this->secret = $secret;
+        // Secret requires a new line at the end, so if its not there, lets add it.
+        $this->secret = (strpos($secret, self::NEW_LINE) === (strlen($secret) - 1)) ? $secret : $secret.self::NEW_LINE;
     }
 
     /**

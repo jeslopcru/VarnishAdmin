@@ -9,6 +9,7 @@ abstract class Commands
     const START = 'start';
     const STATUS = 'status';
     const STOP = 'stop';
+    const BACKEND = 'backend';
     const BAN = 'ban';
     const AUTH = 'auth';
 
