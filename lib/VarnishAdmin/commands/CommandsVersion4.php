@@ -19,4 +19,12 @@ class CommandsVersion4 extends Commands
     {
         return self::NUMBER;
     }
+
+    /**
+     * @return string
+     */
+    public function getBackendList()
+    {
+        return self::BACKEND . '.list';
+    }
 }
