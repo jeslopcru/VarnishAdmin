@@ -158,7 +158,7 @@ class VarnishAdminSocketTest extends PHPUnit_Framework_TestCase
     public function testSetSecret()
     {
         $this->admin->setSecret('secret');
-        $this->assertEquals('secret', $this->admin->secret);
+        $this->assertEquals("secret\n", $this->admin->secret);
     }
 
     public function testStop()
