@@ -342,7 +342,8 @@ class VarnishAdminSocket implements VarnishAdmin
      */
     public function setSecret($secret)
     {
-        $this->secret = $secret;
+        // Secret requires a new line at the end, so if its not there, lets add it.
+        $this->secret = (strpos($secret, self::NEW_LINE) === (strlen($secret) - 1)) ? $secret : $secret.self::NEW_LINE;
     }
 
     /**
